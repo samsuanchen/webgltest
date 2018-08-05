@@ -7,6 +7,8 @@
 </body>
 <script src="./02_Adding 2D content to a WebGL context_files/gl-matrix.js"></script>
 <script>
+// 宣告一個變數來追蹤正方形旋轉的角度
+var squareRotation = 0.0;
 function initWebGL(canvas) {
   var gc = null;
   // 嘗試獲得標準背景資料。如果失敗，退而獲取試驗版本
@@ -100,7 +102,7 @@ function initBuffers(gl) {
     color: colorBuffer,
   };
 }
-function drawScene(gl, programInfo, buffers) {
+function drawScene(gl, programInfo, buffers, deltaTime) {
   // 設定清除色為黑，完全不透明
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
   // 開啟景深測試
@@ -135,6 +137,10 @@ function drawScene(gl, programInfo, buffers) {
   mat4.translate(modelViewMatrix,     // destination matrix
                  modelViewMatrix,     // matrix to translate
                  [-0.0, 0.0, -6.0]);  // amount to translate
+  mat4.rotate(modelViewMatrix,  // destination matrix
+              modelViewMatrix,  // matrix to rotate
+              squareRotation,   // amount to rotate in radians
+              [0, 0, 1]);       // axis to rotate around
   // Tell WebGL how to pull out the positions from the position
   // buffer into the vertexPosition attribute.
   {
@@ -190,6 +196,7 @@ function drawScene(gl, programInfo, buffers) {
     const vertexCount = 4;
     gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
   }
+  squareRotation += deltaTime;
 }
 var gl; // 一個WebGL的全域變數
 function main() {
@@ -212,7 +219,19 @@ function main() {
 	},
   };
   const buffers = initBuffers(gl);
-  drawScene(gl, programInfo, buffers);
+//drawScene(gl, programInfo, buffers);
+  var then = 0;
+  // Draw the scene repeatedly
+  function render(now) {
+	now *= 0.001;  // convert to seconds
+	const deltaTime = now - then;
+	then = now;
+
+	drawScene(gl, programInfo, buffers, deltaTime);
+
+	requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
 }
 main();
 </script>
