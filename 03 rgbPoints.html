@@ -1,0 +1,93 @@
+<canvas width="150" height="150" id="canvas">
+<script>
+var np = 3;
+var points = [ // x,y values for each point
+  -0.8, -0.8, // point1
+   0.8, -0.8, // point2
+   0.0,  0.8, // point3
+];
+var colors = [ // r g b values for each point
+  1.0, 0.0, 0.0, // point 1 red
+  0.0, .75, 0.0, // point 2 green
+  0.0, 0.0, 1.0, // point 3 blue
+];
+function initGL() {
+   var gl = canvas.getContext('webgl');
+   gl.viewport(0, 0, canvas.width, canvas.height); // whole canvas
+   gl.clearColor(.5, .5, .5, 1); // background color R G B O
+   return gl;
+}
+function createVShader(gl) {
+  var vShd = gl.createShader(gl.VERTEX_SHADER);
+  var vSrc=`
+  attribute vec4 position;
+  attribute float size;
+  attribute vec4 color;
+  varying lowp vec4 vColor; // 與 fShd 共用
+  void main(void) {
+    gl_Position = position;
+    gl_PointSize = size;
+    vColor = color;
+  }`;
+  gl.shaderSource(vShd, vSrc);
+  gl.compileShader(vShd);
+  return vShd;
+}
+function createFShader(gl) {
+  var fShd = gl.createShader(gl.FRAGMENT_SHADER);
+  var fSrc=`
+  precision mediump float;
+  varying lowp vec4 vColor; // 與 vShd 共用
+  void main(void) {
+    gl_FragColor = vColor;
+  }`;
+  gl.shaderSource(fShd, fSrc);
+  gl.compileShader(fShd);
+  return fShd;
+}
+function initShaders(gl) {
+  var shaderProgram = gl.createProgram();
+  gl.attachShader(shaderProgram, createVShader(gl));
+  gl.attachShader(shaderProgram, createFShader(gl));
+  gl.linkProgram(shaderProgram);
+  gl.useProgram(shaderProgram);
+  return shaderProgram;
+}
+function initData(gl, program) {
+  // 1. 設定 vShd 的 position
+  // 將 points 放到 vBuf, 從 vBuf 取 points 值 設定 vShd 的 position
+  // 每個頂點從 vBuf 取 2 值 (分別為 X 與 Y), 皆浮點數, normalized, type 0, stride 0
+  var vBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+  var aPoints = gl.getAttribLocation(program, "position");
+  gl.vertexAttribPointer(aPoints, 2, gl.FLOAT, false, 0 , 0);
+  gl.enableVertexAttribArray(aPoints);
+  // 2. 設定 vShd 的 size
+  gl.vertexAttrib1f(gl.getAttribLocation(program, "size"), 10.0);
+  // 3. 設定 vShd 的 color
+  // 將 colors 放到 cBuf, 從 cBuf 取 colors 值 設定 vShd 的 color
+  // 每個頂點從 cBuf 取 3 值 (分別為 R G B), 皆浮點數, normalized, type 0, stride 0
+  var cBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+  var aColors = gl.getAttribLocation(program, "color");
+  gl.vertexAttribPointer(aColors, 3, gl.FLOAT, false, 0 , 0);
+  gl.enableVertexAttribArray(aColors);
+}
+function draw(gl) {
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  // gl.drawArrays(gl.LINES, 0, np);
+  gl.drawArrays(gl.LINE_LOOP, 0, np);
+  // gl.drawArrays(gl.TRIANGLES, 0, np);
+  // gl.drawArrays(gl.TRIANGLE_STRIP, 0, np);
+  // gl.drawArrays(gl.TRIANGLE_FAN, 0, np);
+  gl.drawArrays(gl.POINTS, 0, np);
+}
+function main() {
+  var gl = initGL();
+  initData(gl, initShaders(gl));
+  draw(gl);
+}
+main();
+</script>
