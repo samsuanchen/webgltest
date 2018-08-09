@@ -1,0 +1,279 @@
+<canvas id="canvas" width="200" height="200"></canvas><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.3.2/gl-matrix-min.js"></script><script>
+
+//  3x3 魔術方塊
+var P = [];
+var C = []; 
+var I = []; 
+var K = 0;  // cubic id 
+var L, R, D, T, B, F;
+for(var i=0; i<3; i++){
+  for(var j=0; j<3; j++){
+    for(var k=0; k<3; k++){
+		L=i*.66-.97, // left
+    R=L+.62, // right
+    D=j*.66-.97, // down
+    T=D+.62, // top
+    B=k*.66-.97, // back
+    F=B+.62; // front
+    // 每小方塊 6 面, 每面 4 頂點 x,y,z positions
+		// Front face
+		P = P.concat(L, D, F); //-1.0, -1.0,  1.0, // LDF
+		P = P.concat(R, D, F); // 1.0, -1.0,  1.0, // RDF
+		P = P.concat(R, T, F); // 1.0,  1.0,  1.0, // RTF
+		P = P.concat(L, T, F); //-1.0,  1.0,  1.0, // LTF
+		// Back face
+		P = P.concat(L, D, B); //-1.0, -1.0, -1.0, // LDB
+		P = P.concat(L, T, B); //-1.0,  1.0, -1.0, // LTB
+		P = P.concat(R, T, B); // 1.0,  1.0, -1.0, // RTB
+		P = P.concat(R, D, B); // 1.0, -1.0, -1.0, // RDB
+		// Top face
+		P = P.concat(L, T, B); //-1.0,  1.0, -1.0, // LTB
+		P = P.concat(L, T, F); //-1.0,  1.0,  1.0, // LTF
+		P = P.concat(R, T, F); // 1.0,  1.0,  1.0, // RTF
+		P = P.concat(R, T, B); // 1.0,  1.0, -1.0, // RTB
+		// Down face
+		P = P.concat(L, D, B); //-1.0, -1.0, -1.0, // LDB
+		P = P.concat(R, D, B); // 1.0, -1.0, -1.0, // RDB
+		P = P.concat(R, D, F); // 1.0, -1.0,  1.0, // RDF
+		P = P.concat(L, D, F); //-1.0, -1.0,  1.0, // LDF
+		// Right face
+		P = P.concat(R, D, B); // 1.0, -1.0, -1.0, // RDB
+		P = P.concat(R, T, B); // 1.0,  1.0, -1.0, // RTB
+		P = P.concat(R, T, F); // 1.0,  1.0,  1.0, // RTF
+		P = P.concat(R, D, F); // 1.0, -1.0,  1.0, // RDF
+		// Left face
+		P = P.concat(L, D, B); //-1.0, -1.0, -1.0, // LDB
+		P = P.concat(L, D, F); //-1.0, -1.0,  1.0, // LDF
+		P = P.concat(L, T, F); //-1.0,  1.0,  1.0, // LTF
+		P = P.concat(L, T, B); //-1.0,  1.0, -1.0, // LTB
+      
+    // 每小方塊 6 面, 每面 r,g,b faceColors
+		C = C.concat([[       0, k==2? 1:0,        0]]);  // Front face: green
+		C = C.concat([[       0,         0, k==0?1:0]]);  // Back face: blue
+		C = C.concat([[j==2?1:0, j==2? 1:0,        0]]);  // Top face: yellow
+		C = C.concat([[j==0?1:0, j==0? 1:0, j==0?1:0]]);  // Down face: white
+		C = C.concat([[i==2?1:0,         0,        0]]);  // Right face: red
+		C = C.concat([[i==0?1:0, i==0?.5:0,        0]]);  // Left face: orange
+      
+		// 每小方塊 6 面, 每面 6 點 (2 三角形) indices
+		I = I.concat(K+ 0, K+ 1, K+ 2, K+ 0, K+ 2, K+ 3);   // front 
+		I = I.concat(K+ 4, K+ 5, K+ 6, K+ 4, K+ 6, K+ 7);   // back
+		I = I.concat(K+ 8, K+ 9, K+10, K+ 8, K+10, K+11);   // top
+		I = I.concat(K+12, K+13, K+14, K+12, K+14, K+15);   // bottom
+		I = I.concat(K+16, K+17, K+18, K+16, K+18, K+19);   // right
+		I = I.concat(K+20, K+21, K+22, K+20, K+22, K+23);   // left
+		
+		K+=24;
+    }
+  }
+}
+
+const vsCode = `// GPU Vertex Shader Code
+
+// pointers of data
+attribute vec4 aPosition;
+attribute vec4 aColor;
+uniform mat4 uModelView;
+uniform mat4 uProjection;
+
+// data shared with fsCode
+varying lowp vec4 vColor;
+
+void main(void) {
+  gl_Position = uProjection * uModelView * aPosition;
+  vColor = aColor; // give data to fsCode
+}
+`;
+
+const fsCode = `// GPU Fragment Shader Code
+
+// data shared with vsCode
+varying lowp vec4 vColor;
+
+void main(void) {
+  gl_FragColor = vColor; // get data from vsCode
+}
+`;
+
+// pointers of GPU data
+var aPosition, aColor, uProjection, uModelView;
+// pointers of GPU buffer
+var bPosition, bColor, bIndex;
+
+var cubeRotation = 0.0;
+
+main();
+
+///////###### A. main ######////////
+function main() {
+
+  const gl = canvas.getContext('webgl');
+  const shaderProgram = code(gl, vsCode, fsCode); ///###### B. code ######///
+  // setup pointers to data buffer
+  aPosition = gl.getAttribLocation(shaderProgram, 'aPosition');
+  aColor = gl.getAttribLocation(shaderProgram, 'aColor');
+  uProjection = gl.getUniformLocation(shaderProgram, 'uProjection');
+  uModelView = gl.getUniformLocation(shaderProgram, 'uModelView');
+  // setup data buffer 
+  data(gl); ///###### C. data ######///
+  
+  var then = 0;
+  // Draw the scene repeatedly
+  function render(now) {
+    now *= 0.001;  // convert to seconds
+    const deltaTime = now - then;
+    then = now;
+    draw(gl, deltaTime); ///###### D. draw ######///
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+}
+
+///////###### B. code ######////////
+function code(gl, vsCode, fsCode) {
+  const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsCode);
+  const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsCode);
+  const shaderProgram = gl.createProgram();
+  gl.attachShader(shaderProgram, vertexShader);
+  gl.attachShader(shaderProgram, fragmentShader);
+  gl.linkProgram(shaderProgram);
+  gl.useProgram(shaderProgram);
+  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+    alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+    return null;
+  }
+  return shaderProgram;
+}
+function loadShader(gl, type, source) {
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+} 
+
+///////###### C. data ######////////
+function data(gl) {
+  ////////////////////////////////////////////////////////////////////////////
+
+  bPosition = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bPosition); //////////////////////////////
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(P), gl.STATIC_DRAW);
+  ////////////////////////////////////////////////////////////////////////////
+
+  var colors = [];
+  for (var j = 0; j < C.length; ++j) {
+    const c = C[j];
+    colors = colors.concat(c, c, c, c);/*
+	for(var i = 0; i < 4; i++){
+		var k = (j * 4 + i)*3, x = P[k++], y=P[k++], z=P[k];
+		console.log('xyz = '+x+','+y+','+z,'rgb = '+c.join(','));
+	}
+	console.log();*/
+  }
+  bColor = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bColor); //////////////////////////////
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+  ////////////////////////////////////////////////////////////////////////////
+
+  bIndex = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bIndex); //////////////////////////////
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(I), gl.STATIC_DRAW);
+  ////////////////////////////////////////////////////////////////////////////
+}
+
+///////###### D. draw ######////////
+function draw(gl, deltaTime) {
+  // 背景
+  gl.clearColor(0.5, 0.5, 0.5, 1.0);  // Clear to grey, fully opaque
+  gl.clearDepth(1.0);                 // Clear everything
+  gl.enable(gl.DEPTH_TEST);           // Enable depth testing
+  gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  
+  // 座標 位移 旋轉
+  // Create a perspective matrix, a special matrix that is
+  // used to simulate the distortion of perspective in a camera.
+  // Our field of view is 45 degrees, with a width/height
+  // ratio that matches the display size of the canvas
+  // and we only want to see objects between 0.1 units
+  // and 100 units away from the camera.
+  const projectionMatrix = mat4.create();
+  const fieldOfView = 45 * Math.PI / 180;   // in radians
+  const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+  const zNear = 0.1;
+  const zFar = 99.0;
+  mat4.perspective(projectionMatrix,
+                   fieldOfView,
+                   aspect,
+                   zNear,
+                   zFar);
+  gl.uniformMatrix4fv(
+      uProjection, //////////////////////////////
+      false,
+      projectionMatrix);
+  // the center of the scene.
+  const modelViewMatrix = mat4.create();
+  mat4.translate(modelViewMatrix,     // destination matrix
+                 modelViewMatrix,     // matrix to translate
+                 [-0.0, 0.0, -6.0]);  // amount to translate         位移
+  mat4.rotate(modelViewMatrix,        // destination matrix
+              modelViewMatrix,        // matrix to rotate
+              cubeRotation * .5,      // amount to rotate in radians 旋轉
+              [1, 1, 1]);             // axis to rotate around
+  gl.uniformMatrix4fv(
+      uModelView, //////////////////////////////
+      false,
+      modelViewMatrix);
+  
+  // 取頂點
+  { const numComponents = 3;          // x,y,z
+    const type = gl.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, bPosition); //////////////////////////////
+    gl.vertexAttribPointer(
+        aPosition, //////////////////////////////
+        numComponents,
+        type,
+        normalize,
+        stride,
+        offset);
+    gl.enableVertexAttribArray(
+        aPosition);
+  }
+  
+  // 取顏色
+  { const numComponents = 3;          // r,g,b
+    const type = gl.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, bColor); //////////////////////////////
+    gl.vertexAttribPointer(
+        aColor, //////////////////////////////
+        numComponents,
+        type,
+        normalize,
+        stride,
+        offset);
+    gl.enableVertexAttribArray(
+        aColor);
+  } 
+  
+  // 畫出 6 面
+  { const vertexCount = I.length;
+    const type = gl.UNSIGNED_SHORT;
+    const offset = 0;
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bIndex); //////////////////////////////
+    gl.drawElements(gl.TRIANGLES, vertexCount, type, offset); // 畫 6 面 (每面 2 三角形)
+  } 
+  
+  // 轉動
+  cubeRotation += deltaTime;
+} // </script>

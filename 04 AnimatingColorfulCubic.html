@@ -1,7 +1,7 @@
 <script src="02_Adding 2D content to a WebGL context_files/gl-matrix.js"></script>
 <canvas id="canvas" width="200" height="200"></canvas>
 <script>
-var vertices = [ // 正立方體
+var points = [ // 正立方體
 // 8 個頂點 每個點 xyz 座標 與 rgb 顏色
   -1, -1, -1,     0.0, 0.0, 0.0,   // p00 LDB
    1, -1, -1,     1.0, 0.0, 0.0,   // p01 RDB
@@ -22,7 +22,7 @@ var vertices = [ // 正立方體
    0,  0,  1,     0.7, 0.7, 1.0,   // p13   F
 ];
 
-var indices = [ // 正立方體 8 頂點 每 2 頂點連線 (對角除外)
+var lines = [ // 正立方體 8 頂點 每 2 頂點連線 (對角除外)
   0,1,  0,2,  0,3,  0,4,  0,5,  0,6,/*0,7,*/
   1,2,  1,3,  1,4,  1,5,/*1,6,*/1,7,
   2,3,  2,4,/*2,5,*/2,6,  2,7,
@@ -35,7 +35,7 @@ var indices = [ // 正立方體 8 頂點 每 2 頂點連線 (對角除外)
 
 function initGL() {
    var gl = canvas.getContext('webgl');
-   gl.enable(gl.DEPTH_TEST); // 開啟【前景遮蔽後景】效果
+   gl.enable(gl.DEPTH_TEST); // 開啟【前景遮蔽後景】透視效果
    gl.viewport(0, 0, canvas.width, canvas.height); // 顯示整張畫布
    gl.clearColor(.5, .5, .5, 1); // 以灰色設定為背景
    return gl;
@@ -45,11 +45,11 @@ var vSrc = `
 attribute vec4 coords;
 attribute vec4 colors;
 varying vec4 varyingColors;
-uniform mat4 u_perspectiveMatrix;
-uniform mat4 u_transformMatrix;
+uniform mat4 u_perspective;
+uniform mat4 u_transform;
 void main() {
-  gl_Position = u_perspectiveMatrix *
-                u_transformMatrix *
+  gl_Position = u_perspective *
+                u_transform *
                 coords;
   varyingColors = colors;
 }`;
@@ -93,7 +93,7 @@ function createPoints(gl, program) {
   var buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER,
-                new Float32Array(vertices),
+                new Float32Array(points),
                 gl.STATIC_DRAW);
   
   var aCoords = gl.getAttribLocation(program, "coords");
@@ -112,38 +112,38 @@ function createPoints(gl, program) {
   mat4.perspective(perspectiveMatrix, 1,
                    canvas.width / canvas.height, 0.1, 11);
   var perspectiveLoc = gl.getUniformLocation(program,
-                                             'u_perspectiveMatrix');
+                                             'u_perspective');
   gl.uniformMatrix4fv(perspectiveLoc, false, perspectiveMatrix);
 }
-function createIndices(gl) {
-  var indexCount = indices.length;
+function createLines(gl) {
+  var indexCount = lines.length;
   var indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
-                new Uint8Array(indices),
+                new Uint8Array(lines),
                 gl.STATIC_DRAW);
   return indexCount;
 }
-function draw(gl, vertices, shaderProgram, indexCount) {
+function draw(gl, points, shaderProgram, indexCount) {
   gl.clear(gl.COLOR_BUFFER_BIT); // 以背景顏色清畫布
   mat4.rotateX(matrix, matrix, -0.007); // 座標轉軸
   mat4.rotateY(matrix, matrix,  0.013); // 座標轉軸
   mat4.rotateZ(matrix, matrix,  0.010); // 座標轉軸
-  var transformMatrix = gl.getUniformLocation(shaderProgram, "u_transformMatrix");
+  var transformMatrix = gl.getUniformLocation(shaderProgram, "u_transform");
   gl.uniformMatrix4fv(transformMatrix, false, matrix);
   
   gl.drawElements(gl.LINES, indexCount, gl.UNSIGNED_BYTE, 0);
-  const bindDraw = (gl, vertices, shaderProgram, indexCount) => () => {
-    draw(gl, vertices, shaderProgram, indexCount);
+  const bindDraw = (gl, points, shaderProgram, indexCount) => () => {
+    draw(gl, points, shaderProgram, indexCount);
   }
-  requestAnimationFrame(bindDraw(gl, vertices, shaderProgram, indexCount));
+  requestAnimationFrame(bindDraw(gl, points, shaderProgram, indexCount));
 }
 function main() {
   var gl = initGL();
   var shaderProgram = initShaders(gl, vSrc, fSrc);
-  var vertices = createPoints(gl, shaderProgram);
-  var indexCount = createIndices(gl);
-  draw(gl, vertices, shaderProgram, indexCount);
+  var points = createPoints(gl, shaderProgram);
+  var indexCount = createLines(gl);
+  draw(gl, points, shaderProgram, indexCount);
 }
 main();
 </script>
