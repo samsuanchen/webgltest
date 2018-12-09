@@ -1,0 +1,116 @@
+      body {
+
+        color: #555;
+        font-family: ubuntu, helvetica, arial, sans, sans-serif;
+
+      }
+
+      a {
+
+        color: #39d;
+
+      }
+
+      @media (max-device-width: 300px) {
+
+          #wrapper #support h1 {
+            font-weight: bold;
+            font-size: 20px;
+            margin: 10px 0px;
+          }
+          #wrapper #support .webgl-div div {
+            margin: 10px 10px;    
+          }
+          #wrapper #support #logo-container {
+            text-align: center;
+          }
+          #wrapper #support canvas {
+            margin: 10px 0px 10px 0px;
+          }
+          #wrapper hr {
+            margin: 10px 0px;
+          }
+          #wrapper #moreinfo {
+            margin: 10px 0px 0px 0px;
+          }
+
+      }
+
+      @media (min-device-width: 300px) {
+
+          #wrapper #support h1 {
+            font-weight: normal;
+            font-size: 30px;
+            margin: 30px 0px;
+          }
+
+          #wrapper #support {
+            text-align: center;
+          }
+    
+          #wrapper #support canvas {
+            margin: 30px 0px 10px 0px;
+          }
+    
+          #wrapper hr {
+            margin: 30px 0px;
+          }
+
+          #wrapper {
+            width: 300px;
+          }
+
+          #wrapper #moreinfo {
+            width: 250px;
+            margin: 0px 20px 0px 20px;
+            float: left;
+          }
+
+          #wrapper #resources {
+            width: 250px;
+            height: 150px;
+            margin: 0px 20px 0px 40px;
+            float: left;
+          }
+
+          #wrapper #support .webgl-div div {
+            margin: 20px 100px;    
+          }
+      }
+
+      #wrapper {
+        margin: auto;
+      }
+
+      #wrapper hr {
+        border-top: solid #e3e3e3;
+        border-width: 1px 0px 0px 0px;
+        height: 0px;
+      }
+
+      #wrapper #support h1 {
+        color: #3a3;
+      }
+
+      #wrapper #resources div {
+        font-size: 13px;
+      }
+
+      #wrapper #moreinfo div {
+        font-size: 13px;
+      }
+
+      .webgl-hidden {
+          display: none;
+      }
+
+      #webgl-browser-list {
+        //white-space: nowrap;
+      }
+
+      #hostedby, #hostedby a {
+          clear: left;
+        //font-size: 12px;
+        //text-align: center;
+        //color: #eee;
+      }

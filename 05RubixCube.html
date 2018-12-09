@@ -1,11 +1,14 @@
 <canvas id="canvas" width="200" height="200"></canvas><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.3.2/gl-matrix-min.js"></script><script>
 
 //  3x3 魔術方塊
-var P = [];
+var P = []; 
 var C = []; 
 var I = []; 
 var K = 0;  // cubic id 
 var L, R, D, T, B, F;
+function addFaceColor( C, c ){
+	return C.concat(c, c, c, c);
+}
 for(var i=0; i<3; i++){
   for(var j=0; j<3; j++){
     for(var k=0; k<3; k++){
@@ -48,6 +51,7 @@ for(var i=0; i<3; i++){
 		P = P.concat(L, T, B); //-1.0,  1.0, -1.0, // LTB
       
     // 每小方塊 6 面, 每面 r,g,b faceColors
+	    
 		C = C.concat([[       0, k==2? 1:0,        0]]);  // Front face: green
 		C = C.concat([[       0,         0, k==0?1:0]]);  // Back face: blue
 		C = C.concat([[j==2?1:0, j==2? 1:0,        0]]);  // Top face: yellow
@@ -67,6 +71,8 @@ for(var i=0; i<3; i++){
     }
   }
 }
+var colors = [];
+for (var j = 0, c; j < C.length, c = C[j]; ++j) colors = colors.concat(c, c, c, c);
 
 const vsCode = `// GPU Vertex Shader Code
 
@@ -81,6 +87,8 @@ varying lowp vec4 vColor;
 
 void main(void) {
   gl_Position = uProjection * uModelView * aPosition;
+  // aPosition0: left 9 cubes. aPosition1: rest 18 cubes
+  // uLeftFaseRotate90 * aPosition0
   vColor = aColor; // give data to fsCode
 }
 `;
@@ -165,16 +173,6 @@ function data(gl) {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(P), gl.STATIC_DRAW);
   ////////////////////////////////////////////////////////////////////////////
 
-  var colors = [];
-  for (var j = 0; j < C.length; ++j) {
-    const c = C[j];
-    colors = colors.concat(c, c, c, c);/*
-	for(var i = 0; i < 4; i++){
-		var k = (j * 4 + i)*3, x = P[k++], y=P[k++], z=P[k];
-		console.log('xyz = '+x+','+y+','+z,'rgb = '+c.join(','));
-	}
-	console.log();*/
-  }
   bColor = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, bColor); //////////////////////////////
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
@@ -202,16 +200,12 @@ function draw(gl, deltaTime) {
   // ratio that matches the display size of the canvas
   // and we only want to see objects between 0.1 units
   // and 100 units away from the camera.
-  const projectionMatrix = mat4.create();
-  const fieldOfView = 45 * Math.PI / 180;   // in radians
-  const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-  const zNear = 0.1;
-  const zFar = 99.0;
-  mat4.perspective(projectionMatrix,
-                   fieldOfView,
-                   aspect,
-                   zNear,
-                   zFar);
+  var projectionMatrix, fieldOfView, aspect, zNear, zFar;
+  mat4.perspective(projectionMatrix = mat4.create(),
+                   fieldOfView = 45 * Math.PI / 180,
+                   aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
+                   zNear = 0.1,
+                   zFar = 99.0);
   gl.uniformMatrix4fv(
       uProjection, //////////////////////////////
       false,
@@ -220,7 +214,7 @@ function draw(gl, deltaTime) {
   const modelViewMatrix = mat4.create();
   mat4.translate(modelViewMatrix,     // destination matrix
                  modelViewMatrix,     // matrix to translate
-                 [-0.0, 0.0, -6.0]);  // amount to translate         位移
+                 [-0.0, 0.0, -5.0]);  // amount to translate         位移
   mat4.rotate(modelViewMatrix,        // destination matrix
               modelViewMatrix,        // matrix to rotate
               cubeRotation * .5,      // amount to rotate in radians 旋轉
@@ -231,48 +225,33 @@ function draw(gl, deltaTime) {
       modelViewMatrix);
   
   // 取頂點
-  { const numComponents = 3;          // x,y,z
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, bPosition); //////////////////////////////
-    gl.vertexAttribPointer(
+  var numComponents, type, normalize, stride, offset;
+  gl.bindBuffer(gl.ARRAY_BUFFER, bPosition); //////////////////////////////
+  gl.vertexAttribPointer(
         aPosition, //////////////////////////////
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        aPosition);
-  }
+        numComponents = 3, // x,y,z
+        type = gl.FLOAT,
+        normalize = false,
+        stride = 0,
+        offset = 0);
+  gl.enableVertexAttribArray(aPosition);
   
   // 取顏色
-  { const numComponents = 3;          // r,g,b
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, bColor); //////////////////////////////
-    gl.vertexAttribPointer(
+  var numComponents, type, normalize, stride, offset;
+  gl.bindBuffer(gl.ARRAY_BUFFER, bColor); //////////////////////////////
+  gl.vertexAttribPointer(
         aColor, //////////////////////////////
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        aColor);
-  } 
+        numComponents = 3,          // r,g,b
+        type = gl.FLOAT,
+        normalize = false,
+        stride = 0,
+        offset = 0);
+  gl.enableVertexAttribArray(aColor);
   
   // 畫出 6 面
-  { const vertexCount = I.length;
-    const type = gl.UNSIGNED_SHORT;
-    const offset = 0;
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bIndex); //////////////////////////////
-    gl.drawElements(gl.TRIANGLES, vertexCount, type, offset); // 畫 6 面 (每面 2 三角形)
-  } 
+  var vertexCount, type, offset;
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bIndex); //////////////////////////////
+  gl.drawElements(gl.TRIANGLES, vertexCount = I.length, type = gl.UNSIGNED_SHORT, offset = 0); // 畫 6 面 (每面 2 三角形)
   
   // 轉動
   cubeRotation += deltaTime;

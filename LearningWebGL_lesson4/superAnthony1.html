@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<!-- derived from url=(0052)http://learningwebgl.com/lessons/lesson04/index.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>anthony1</title>
+<script src="glMatrix-0.9.5.min.js"></script>
+<script src="webgl-utils.js"></script>
+<script src="oneWordVM.js">// having the vm f </script>
+</head>
+<body onload="webGLStart();">
+	<canvas id="canvas" width="250" height="250"></canvas><br>
+	<input id="input" size="58" onkeyup="onScriptKeyUp()" hint="forth or javascript"><br>
+	<button onclick="onClick()">eval javaScript or forth</button>
+	<button id="bAutoRun" onclick="autoRun()">autoRun</button><br> 0 腰﹍
+	轉幅 <input id="amplitude0" value="30" size="1">
+	速 <input id="speed0" value="2" size="1">
+	<input	id="range0" type="range"
+			min="-360"                    // default 0
+			max="360"                  // default 100
+			value="0"                 // default min + (max-min)/2
+			onchange="changeRange0()"
+	>
+	偏 <input id="rangeVal0" value="0" size="1" onkeyup="changeVal0()"><br>1 右肩
+	轉幅 <input id="amplitude1" value="90" size="1">
+	速 <input id="speed1" value="2" size="1">
+	<input	type="range"
+			id="range1"
+			min="-360"                    // default 0
+			max="360"                  // default 100
+			value="120"                 // default min + (max-min)/2
+			onchange="changeRange1()"
+	>
+	偏 <input id="rangeVal1" value="120" size="1" onkeyup="changeVal1()"><br>2 右臂
+	轉幅 <input id="amplitude2" value="20" size="1">
+	速 <input id="speed2" value="3" size="1">
+	<input	type="range"
+			id="range2"
+			min="-360"                    // default 0
+			max="360"                  // default 100
+			value="-40"                 // default min + (max-min)/2
+			onchange="changeRange2()"
+	>
+	偏 <input id="rangeVal2" value="-40" size="1" onkeyup="changeVal2()"><br>3 左肩
+	轉幅 <input id="amplitude3" value="15" size="1">
+	速 <input id="speed3" value="2" size="1">
+	<input	type="range"
+			id="range3"
+			min="-360"                    // default 0
+			max="360"                  // default 100
+			value="170"                 // default min + (max-min)/2
+			onchange="changeRange3()"
+	>
+	偏 <input id="rangeVal3" value="170" size="1" onkeyup="changeVal3()"><br>4 左臂
+	轉幅 <input id="amplitude4" value="20" size="1">
+	速 <input id="speed4" value="3" size="1">
+	<input	type="range"
+			id="range4"
+			min="-360"                    // default 0
+			max="360"                  // default 100
+			value="40"                 // default min + (max-min)/2
+			onchange="changeRange4()"
+	>
+	偏 <input id="rangeVal4" value="40" size="1" onkeyup="changeVal4()"><br>5 右腿
+	轉幅 <input id="amplitude5" value="15" size="1">
+	速 <input id="speed5" value="2" size="1">
+	<input	type="range"
+			id="range5"
+			min="-360"                    // default 0
+			max="360"                  // default 100
+			value="10"                 // default min + (max-min)/2
+			onchange="changeRange5()"
+	>
+	偏 <input id="rangeVal5" value="10" size="1" onkeyup="changeVal5()"><br>6 右腳
+	轉幅 <input id="amplitude6" value="10" size="1">
+	速 <input id="speed6" value="3" size="1">
+	<input	type="range"
+			id="range6"
+			min="-360"                    // default 0
+			max="360"                  // default 100
+			value="10"                 // default min + (max-min)/
+		//	data-orientation="vertical" // default horizontal
+			onchange="changeRange6()"
+	>
+	偏 <input id="rangeVal6" value="10" size="1" onkeyup="changeVal6()"><br>7 左腿
+	
+	轉幅 <input id="amplitude7" value="15" size="1">
+	速 <input id="speed7" value="2" size="1">
+	<input	type="range"
+			id="range7"
+			min="-360"                    // default 0
+			max="360"                  // default 100
+			value="-10"                 // default min + (max-min)/2
+			onchange="changeRange7()"
+	>
+	偏 <input id="rangeVal7" value="-10" size="1" onkeyup="changeVal7()"><br>8 左腳
+	轉幅 <input id="amplitude8" value="10" size="1">
+	速 <input id="speed8" value="3" size="1">
+	<input	type="range"
+			id="range8"
+			min="-360"                    // default 0
+			max="360"                  // default 100
+			value="-10"                 // default min + (max-min)/2
+			onchange="changeRange8()"
+	>
+	偏 <input id="rangeVal8" value="-10" size="1" onkeyup="changeVal8()">
+<script src="jQuery_v3.3.1.min.js"></script>
+<script src="../rangeslider.js-2.3.0/rangeslider.js"></script>
+<script>
+var cube = {
+	vertices : [-1, -1,  1,
+				 1, -1,  1,
+				 1,  1,  1,
+				-1,  1,  1, // Front face
+				-1, -1, -1,
+				-1,  1, -1,
+				 1,  1, -1,
+				 1, -1, -1, // Back face	
+				-1,  1, -1,
+				-1,  1,  1,
+				 1,  1,  1,
+				 1,  1, -1, // Top face
+				-1, -1, -1,
+				 1, -1, -1,
+				 1, -1,  1,
+				-1, -1,  1, // Bottom face
+				 1, -1, -1,
+				 1,  1, -1,
+				 1,  1,  1,
+				 1, -1,  1, // Right face
+				-1, -1, -1,
+				-1, -1,  1,
+				-1,  1,  1,
+				-1,  1, -1, // Left face
+			   ],
+	colors :   [ 1., 0., 0.,  1., 0., 0.,  1., 0., 0.,  1., 0., 0., // Front face
+				 1., 1., 0.,  1., 1., 0.,  1., 1., 0.,  1., 1., 0., // Back face
+				 0., 1., 0.,  0., 1., 0.,  0., 1., 0.,  0., 1., 0., // Top face
+				 1., .5, .5,  1., .5, .5,  1., .5, .5,  1., .5, .5, // Bottom face
+				 1., 0., 1.,  1., 0., 1.,  1., 0., 1.,  1., 0., 1., // Right face
+				 0., 0., 1.,  0., 0., 1.,  0., 0., 1.,  0., 0., 1., // Left face
+			   ],
+	indices :  [ 00, 01, 02,  00, 02, 03, // Front face
+				 04, 05, 06,  04, 06, 07, // Back face
+				 08, 09, 10,  08, 10, 11, // Top face
+				 12, 13, 14,  12, 14, 15, // Bottom face
+				 16, 17, 18,  16, 18, 19, // Right face
+				 20, 21, 22,  20, 22, 23  // Left face
+			   ],
+};
+var shader_fs = `
+    precision mediump float;
+    varying vec4 vColor;
+    void main(void) {
+        gl_FragColor = vColor;
+    }`
+var shader_vs = `
+    attribute vec3 aVertexPosition;
+    attribute vec4 aVertexColor;
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    varying vec4 vColor;
+    void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vColor = aVertexColor;
+    }`
+var gl = canvas.getContext("webgl");
+var pMatrix = mat4.create();
+var mvMatrix = mat4.create();
+var mvMatrixStack = [];
+function degToRad(degrees) { return degrees * Math.PI / 180; }
+function initGL() {
+	try {
+		gl.viewportWidth = canvas.width;
+		gl.viewportHeight = canvas.height;
+	} catch (e) {
+	}
+	if (!gl) {
+		alert("Could not initialise WebGL, sorry :-(");
+	}
+}
+function compileTypeShader(type, shaderScript) {
+	var typeShader;
+	if (type == "fragmentShader") {
+		typeShader = gl.createShader(gl.FRAGMENT_SHADER);
+	} else if (type == "vertexShader") {
+		typeShader = gl.createShader(gl.VERTEX_SHADER);
+	} else {
+		return null;
+	}
+	gl.shaderSource(typeShader, shaderScript);
+	gl.compileShader(typeShader);
+	if (!gl.getShaderParameter(typeShader, gl.COMPILE_STATUS)) {
+		alert(gl.getShaderInfoLog(typeShader));
+		return null;
+	}
+	return typeShader;
+}
+var shader;
+function initShaders() {
+	var fragmentShader = compileTypeShader("fragmentShader", shader_fs);
+	var vertexShader = compileTypeShader("vertexShader", shader_vs);
+	shader = gl.createProgram();
+	gl.attachShader(shader, vertexShader);
+	gl.attachShader(shader, fragmentShader);
+	gl.linkProgram(shader);
+	if (!gl.getProgramParameter(shader, gl.LINK_STATUS)) {
+		alert("Could not initialise shaders");
+	}
+	gl.useProgram(shader);
+	shader.vertexPositionAttribute = gl.getAttribLocation(shader, "aVertexPosition");
+	gl.enableVertexAttribArray(shader.vertexPositionAttribute);
+	shader.vertexColorAttribute = gl.getAttribLocation(shader, "aVertexColor");
+	gl.enableVertexAttribArray(shader.vertexColorAttribute);
+	shader.pMatrixUniform = gl.getUniformLocation(shader, "uPMatrix");
+	shader.mvMatrixUniform = gl.getUniformLocation(shader, "uMVMatrix");
+}
+var	vertexPositionBufferItemSize = 3;
+function initBuffers() {
+	cube.vertexPositionBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, cube.vertexPositionBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.vertices), gl.STATIC_DRAW);
+	cube.vertexColorBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, cube.vertexColorBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.colors), gl.STATIC_DRAW);
+	cube.vertexColorBuffer.itemSize = 3;
+	cube.vertexIndexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cube.vertexIndexBuffer);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cube.indices), gl.STATIC_DRAW);
+}
+function drawBackground() {
+	gl.clearColor(0.2, 0.2, 0.2, 1.0);
+	gl.enable(gl.DEPTH_TEST);
+	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+	gl.uniformMatrix4fv(shader.pMatrixUniform, false, pMatrix);
+}
+cube.draw = function () {
+	gl.bindBuffer(gl.ARRAY_BUFFER, cube.vertexPositionBuffer);
+	gl.vertexAttribPointer(shader.vertexPositionAttribute, vertexPositionBufferItemSize, gl.FLOAT, false, 0, 0);
+	gl.bindBuffer(gl.ARRAY_BUFFER, cube.vertexColorBuffer);
+	gl.vertexAttribPointer(shader.vertexColorAttribute, cube.vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cube.vertexIndexBuffer);
+	gl.uniformMatrix4fv(shader.mvMatrixUniform, false, mvMatrix);
+	gl.drawElements(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0);
+}
+function setOrigin(pos) { mat4.identity(mvMatrix); mat4.translate(mvMatrix, pos); }
+function translate(pos) { mat4.translate(mvMatrix, pos); }
+function rotate(dir, angle) { mat4.rotate(mvMatrix, degToRad(angle), dir); }
+function changeOrigin(vertices, pos){
+	for(var i=0; i<vertices.length; i+=3)
+		vertices[i]-=pos[0], vertices[i+1]-=pos[1], vertices[i+2]-=pos[2];
+}
+var stack = [];
+function mvMatrixPush(){
+	var copy = mat4.create();
+	mat4.set(mvMatrix, copy);
+	stack.push(copy);
+}
+function mvMatrixPop(){
+	mat4.set(stack.pop(), mvMatrix);
+}
+var lastTime = 0;
+var delayTime = 0;
+function drawScene() {
+	
+		var time = new Date().getTime() /1000;
+		delayTime = time - lastTime;
+		if(bAutoRun.innerHTML != "autoRun") lastTime = time;
+		time -= delayTime;
+		
+		drawBackground();
+		setOrigin([0, 1.5, -22]);
+		
+		rotate([0,1,0], 5*Math.cos(time*2)); // 全景稍微轉動
+		
+		mvMatrixPush(); // 上半身
+		
+		rotate([0,1,0], parseInt(rangeVal0.value)+parseInt(amplitude0.value)*Math.sin(time*parseInt(speed0.value))); /*0*/
+		cube.draw(); // 腰
+		
+		translate([-1.1,2.2,0]);
+		cube.draw(); // 左胸
+		translate([2.2,0,0]);
+		cube.draw(); // 右胸
+		translate([-1.1,2.4,0]);
+		cube.draw(); // 頭
+		
+		mvMatrixPush(); // 右上肢
+		
+		translate([3.4,-2.0,0]);
+		rotate([0,0,1], parseInt(rangeVal1.value)+parseInt(amplitude1.value)*Math.sin(time*parseInt(speed1.value))); /*1*/
+		cube.draw(); // 右肩
+		
+		translate([0,-2.2,0]);
+		rotate([1,0,0], parseInt(rangeVal2.value)+parseInt(amplitude2.value)*Math.sin(time*parseInt(speed2.value))); /*2*/
+		cube.draw(); // 右臂
+		
+		mvMatrixPop(); // 左上肢
+		
+		translate([-3.4,-2.0,0]);
+		rotate([0,0,1], parseInt(rangeVal3.value)+parseInt(amplitude3.value)*Math.sin(time*parseInt(speed3.value))); /*3*/
+		cube.draw(); // 左肩
+		
+		translate([0,-2.2,0]);
+		rotate([-1,0,0], parseInt(rangeVal4.value)+parseInt(amplitude4.value)*Math.sin(time*parseInt(speed4.value))); /*4*/
+		cube.draw(); // 左臂
+		
+		mvMatrixPop(); // 下半身
+		
+		translate([-1.1,-2.2,0]);
+		cube.draw(); // 股
+		translate([2.2,0,0]);
+		cube.draw(); // 股
+		
+		mvMatrixPush(); // 右下肢
+		
+		translate([1.3,-1,0]);
+		cube.draw(); // 右跨
+		
+		translate([0,-2.1,0]);
+		rotate([1,0,0], parseInt(rangeVal5.value)+parseInt(amplitude5.value)*Math.sin(time*parseInt(speed5.value))); /*5*/
+		cube.draw(); // 右腿
+		
+		translate([0,-2.1,0]);
+		rotate([1,0,0], parseInt(rangeVal6.value)+parseInt(amplitude6.value)*Math.sin(time*parseInt(speed6.value))); /*6*/
+		cube.draw(); // 右腳
+		
+		mvMatrixPop(); // 左下肢
+		
+		translate([-3.5,-1,0]);
+		cube.draw(); // 左跨
+		
+		translate([0,-2.1,0]);
+		rotate([-1,0,0], parseInt(rangeVal7.value)+parseInt(amplitude7.value)*Math.sin(time*parseInt(speed7.value))); /*7*/
+		cube.draw(); // 左腿
+		
+		translate([0,-2.1,0]);
+		rotate([-1,0,0], parseInt(rangeVal8.value)+parseInt(amplitude8.value)*Math.sin(time*parseInt(speed8.value))); /*8*/
+		cube.draw(); // 左腳
+
+}
+function animate(){
+	requestAnimFrame(animate); // the function requestAnimFrame is in webgl-utils.js
+	drawScene()
+}
+function webGLStart() {
+	initGL();
+	initShaders();
+	initBuffers();
+	drawScene();
+	animate();
+}
+function onScriptKeyUp(){
+	if(event.key == "Enter") onClick();
+}
+function onClick(){
+	f.eval(input.value);
+}
+function changeOrigin(verticies, pos){
+	for(var i=0; i<verticies.length; i+=3){
+		verticies[i]-=pos[0], verticies[i+1]-=pos[1], verticies[i+2]-=pos[2];
+	}
+}
+function autoRun(){
+	if(bAutoRun.innerHTML == "autoRun") bAutoRun.innerHTML="stopRun";
+	else								bAutoRun.innerHTML="autoRun";
+}
+function changeVal0(){
+	var v;
+	range0.value=Math.max(Math.min(rangeVal0.value,range0.max),range0.min);
+	drawScene();
+}
+function changeRange0(){
+	rangeVal0.value=range0.value;
+	drawScene();
+}
+function changeVal1(){
+	range1.value=Math.max(Math.min(rangeVal1.value,range1.max),range1.min);
+	drawScene();
+}
+function changeRange1(){
+	rangeVal1.value=range1.value;
+	drawScene();
+}
+function changeVal2(){
+	range2.value=Math.max(Math.min(rangeVal2.value,range2.max),range2.min);
+	drawScene();
+}
+function changeRange2(){
+	rangeVal2.value=range2.value;
+	drawScene();
+}
+function changeVal3(){
+	range3.value=Math.max(Math.min(rangeVal3.value,range3.max),range3.min);
+	drawScene();
+}
+function changeRange3(){
+	rangeVal3.value=range3.value;
+	drawScene();
+}
+function changeVal4(){
+	range4.value=Math.max(Math.min(rangeVal4.value,range4.max),range4.min);
+	drawScene();
+}
+function changeRange4(){
+	rangeVal4.value=range4.value;
+	drawScene();
+}
+function changeVal5(){
+	range5.value=Math.max(Math.min(rangeVal5.value,range5.max),range5.min);
+	drawScene();
+}
+function changeRange5(){
+	rangeVal5.value=range5.value;
+	drawScene();
+}
+function changeVal6(){
+	range6.value=Math.max(Math.min(rangeVal6.value,range6.max),range6.min);
+	drawScene();
+}
+function changeRange6(){
+	rangeVal6.value=range6.value;
+	drawScene();
+}
+function changeVal7(){
+	range7.value=Math.max(Math.min(rangeVal7.value,range7.max),range7.min);
+	drawScene();
+}
+function changeRange7(){
+	rangeVal7.value=range7.value;
+	drawScene();
+}
+function changeVal8(){
+	range8.value=Math.max(Math.min(rangeVal8.value,range8.max),range8.min);
+	drawScene();
+}
+function changeRange8(){
+	rangeVal8.value=range8.value;
+	drawScene();
+}
+</script>
+</html>

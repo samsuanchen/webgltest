@@ -261,49 +261,71 @@ cube.draw = function () {
 	gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
 	gl.drawElements(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0);
 }
-function setOrigin(pos) { mat4.identity(mvMatrix); mat4.translate(mvMatrix, pos);
-//	rotateAxis0.draw();
-}
+function setOrigin(pos) { mat4.identity(mvMatrix); mat4.translate(mvMatrix, pos); }
 function translate(pos) { mat4.translate(mvMatrix, pos); }
 function rotate(dir, angle) { mat4.rotate(mvMatrix, degToRad(angle), dir); }
-
 function changeOrigin(vertices, pos){
-	for(var i=0; i<vertices.length; i+=3){
+	for(var i=0; i<vertices.length; i+=3)
 		vertices[i]-=pos[0], vertices[i+1]-=pos[1], vertices[i+2]-=pos[2];
-	}
+}
+var stack = [];
+function mvMatrixPush(){
+	var copy = mat4.create();
+	mat4.set(mvMatrix, copy);
+	stack.push(copy);
+}
+function mvMatrixPop(){
+	mat4.set(stack.pop(), mvMatrix);
 }
 function drawScene() {
 	drawBackground(); var time = new Date().getTime() /1000;
-	pyramid.indices.length-=6;
-		setOrigin([-1.6, 4, -20]);
-		rotateAxis.draw([1,1,1]);
-		rotate([1,1,1], 90 * time);
-		pyramid.draw();
-		rotate([0,0,1], 30 * Math.sin(time*2));
-	//	pyramid1.draw();
-		translate([2,-2,0]); rotate([0,0,1], 180);
-	//	changeOrigin(pyramid.vertices, [0,1,0]);
-	//	rotate([0,0,1], 30 * Math.sin(time));
-		pyramid.draw();
-	//	changeOrigin(pyramid.vertices, [0,-1,0]);
-		translate([0,2,0]);
-		rotateAxis.draw([0,1.4,0]); rotate([0,1.4,0], 200 * time);
-		cube.draw();
-	pyramid.indices.length+=6;
-	setOrigin([2.8, 2.8, -13]); rotate([1,1,1], -90 * time);
-		rotateAxis.draw([1,1,1]);
-		pyramid.draw();
-	setOrigin([-2.8,-2.8, -13]); rotate([1,1,1], 75 * time);
-		rotateAxis.draw([1,1,1]);
-		cube.draw();
-	setOrigin([2.2, -2.2, -13]); rotate([1,1,1], -75 * time); 
-		rotateAxis.draw([1,1,1]);
-		cube.indices.length-=12;
-			cube.draw();
-		cube.indices.length+=12; translate([2,0,0]); rotate([0, 0, 1], -90);
-		rotateAxis.draw([0,1,0]);
-		rotate([0,1,0], 90 * time);
-		pyramid.draw();
+	setOrigin([0, 2, -20]);
+	mvMatrixPush();
+	rotate([0,1,0], 30 * Math.sin(time*2));
+	cube.draw(); // 腰
+	translate([-1.1,2.2,0]);
+	cube.draw(); // 胸
+	translate([2.2,0,0]);
+	cube.draw(); // 胸
+	translate([-1.1,2.2,0]);
+	cube.draw(); // 頭
+	mvMatrixPush();
+	rotate([0,0,1], 15 * Math.sin(time*2));
+	translate([3.4,-2.0,0]);
+	cube.draw(); // 肩
+	translate([0,-2.2,0]);
+	rotate([1,0,0], 15 * Math.sin(time*3)-20);
+	cube.draw(); // 臂
+	mvMatrixPop();
+	rotate([0,0,1], 15 * Math.sin(time*2));
+	translate([-3.4,-2.0,0]);
+	cube.draw(); // 肩
+	translate([0,-2.2,0]);
+	rotate([-1,0,0], 15 * Math.sin(time*3)+20);
+	cube.draw(); // 臂
+	mvMatrixPop();
+	translate([-1.1,-2.2,0]);
+	cube.draw(); // 股
+	translate([2.2,0,0]);
+	cube.draw(); // 股
+	mvMatrixPush();
+	translate([2.2,-1,0]);
+	cube.draw(); // 跨
+	translate([0,-2.1,0]);
+	rotate([1,0,0], 15 * Math.sin(time*3)+5);
+	cube.draw(); // 腿
+	translate([0,-2.1,0]);
+	rotate([1,0,0], 15 * Math.sin(time*3)+5);
+	cube.draw(); // 腳
+	mvMatrixPop();
+	translate([-4.4,-1,0]);
+	cube.draw(); // 跨
+	translate([0,-2.1,0]);
+	rotate([-1,0,0], 15 * Math.sin(time*3)-5);
+	cube.draw(); // 腿
+	translate([0,-2.1,0]);
+	rotate([-1,0,0], 15 * Math.sin(time*3)-5);
+	cube.draw(); // 腳
 }
 function animate(){
 	drawScene()

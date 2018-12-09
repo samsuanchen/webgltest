@@ -1,0 +1,127 @@
+<!-- superAnthony4.html @ https://github.com/samsuanchen/superAnthony4 -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>anthony4</title>
+<style>input.number{width:28px}input.range{width:28px}input[type="range"]{width:110px}.action{background-color:yellow}</style>
+</head>
+<body onload="webGLStart()"><font name="細明體">
+	<canvas id="canvas" width="250" height="250"></canvas><br>
+	<input id="input" size="47" onpaste="onScriptPasted()" onkeyup="onScriptKeyUp()" hint="forth or javascript"><br>
+	<button onclick="onEvalClick()">eval forth or js</button>
+	名 <input id="iFile" size="6" value="站0">
+	序 <input id="iIndex" class="number" size="1" value="0">
+	向 <input id="iDirect" class="number" size="1" value="0">
+	<button onclick="save()">寫</button>
+	<button onclick="load()">讀</button>
+<div id='myList'></div>
+<button id="bBgn"  onclick="toPrev()">前</button>
+	<button id="bEnd"  onclick="toNext()">後</button>
+	步進 <input  id="iDelta" value="10" class="number">
+	<button id="bAuto" onclick="toAuto()">自動</button>
+	速 <input id="iSpeed" value="1" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	<input id="iPrint" type="checkbox">印
+<table><tr><td>00 Y</td><td>腰﹍
+	   <button id="bDecAng0" onclick="decVal()">-</button>
+	   <input  id="iValAng0" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng0" onclick="incVal()">+</button>
+	起 <input  id="iValMin0" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax0" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>01 Z</td><td>右裸
+	   <button id="bDecAng1" onclick="decVal()">-</button>
+	   <input  id="iValAng1" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng1" onclick="incVal()">+</button>
+	起 <input  id="iValMin1" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax1" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>02 X</td><td>右腳
+	   <button id="bDecAng2" onclick="decVal()">-</button>
+	   <input  id="iValAng2" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng2" onclick="incVal()">+</button>
+	起 <input  id="iValMin2" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax2" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>03 X</td><td>右腿
+	   <button id="bDecAng3" onclick="decVal()">-</button>
+	   <input  id="iValAng3" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng3" onclick="incVal()">+</button>
+	起 <input  id="iValMin3" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax3" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>04 Z</td><td>右跨
+	   <button id="bDecAng4" onclick="decVal()">-</button>
+	   <input  id="iValAng4" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng4" onclick="incVal()">+</button>
+	起 <input  id="iValMin4" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax4" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>05 X</td><td>右肩
+	   <button id="bDecAng5" onclick="decVal()">-</button>
+	   <input  id="iValAng5" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng5" onclick="incVal()">+</button>
+	起 <input  id="iValMin5" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax5" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>06 Z</td><td>右膀
+	   <button id="bDecAng6" onclick="decVal()">-</button>
+	   <input  id="iValAng6" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng6" onclick="incVal()">+</button>
+	起 <input  id="iValMin6" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax6" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>07 X</td><td>右臂
+	   <button id="bDecAng7" onclick="decVal()">-</button>
+	   <input  id="iValAng7" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng7" onclick="incVal()">+</button>
+	起 <input  id="iValMin7" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax7" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>08 Z</td><td>左裸
+	   <button id="bDecAng8" onclick="decVal()">-</button>
+	   <input  id="iValAng8" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng8" onclick="incVal()">+</button>
+	起 <input  id="iValMin8" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax8" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>09 X</td><td>左腳
+	   <button id="bDecAng9" onclick="decVal()">-</button>
+	   <input  id="iValAng9" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng9" onclick="incVal()">+</button>
+	起 <input  id="iValMin9" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax9" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>10 X</td><td>左腿
+	   <button id="bDecAng10" onclick="decVal()">-</button>
+	   <input  id="iValAng10" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng10" onclick="incVal()">+</button>
+	起 <input  id="iValMin10" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax10" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>11 Z</td><td>左跨
+	   <button id="bDecAng11" onclick="decVal()">-</button>
+	   <input  id="iValAng11" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng11" onclick="incVal()">+</button>
+	起 <input  id="iValMin11" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax11" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>12 X</td><td>左肩
+	   <button id="bDecAng12" onclick="decVal()">-</button>
+	   <input  id="iValAng12" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng12" onclick="incVal()">+</button>
+	起 <input  id="iValMin12" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax12" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>13 Z</td><td>左膀
+	   <button id="bDecAng13" onclick="decVal()">-</button>
+	   <input  id="iValAng13" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng13" onclick="incVal()">+</button>
+	起 <input  id="iValMin13" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax13" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>14 X</td><td>左臂
+	   <button id="bDecAng14" onclick="decVal()">-</button>
+	   <input  id="iValAng14" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng14" onclick="incVal()">+</button>
+	起 <input  id="iValMin14" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax14" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr><td>15 Y</td><td>舞台
+	   <button id="bDecAng15" onclick="decVal()">-</button>
+	   <input  id="iValAng15" value="0" class="number" onpaste="toChangeVal()" onkeyup="toChangeVal()">
+	   <button id="bIncAng15" onclick="incVal()">+</button>
+	起 <input  id="iValMin15" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+	迄 <input  id="iValMax15" value="0" class="range" onchange="toChangeVal()" onkeyup="toChangeVal()">
+</td></tr></table>
+<script src="preload.js"></script>
+<script src="glMatrix-0.9.5.js"></script>
+<script src="webgl-utils.js"></script>
+<script src="cube.js"></script>
+<script src="superAnthony.js"></script>
+<script src="eventHandlers.js"></script>
+<script src="oneWordVM1.js">// having the one word vm f </script>
+<script src="index.js"></script>
+</html>

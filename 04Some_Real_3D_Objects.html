@@ -1,0 +1,244 @@
+﻿<!-- saved from url=(0052)http://learningwebgl.com/lessons/lesson04/index.html -->
+<title>4. Some Real 3D Objects</title>
+<body onload="webGLStart()"><canvas id="canvas" width="300" height="300"></canvas></body>
+<script type="text/javascript" src="lib/glMatrix.js"></script>
+<script type="text/javascript" src="lib/webgl-utils.js"></script>
+<script>
+///////////////////////////////////////////////////////////////////////////
+// object 1 the pyramid (rotate around the pyramid axis)
+const pyramid = { vertex: [ // 立錐體各頂點 xyz 位置 及  rgb 顏色
+ 0.0,  1.0,  0.0,  1.0, 0.0, 0.0, // 上頂點 紅
+-1.0, -1.0, -1.0,  1.0, 1.0, 0.0, // 左後點 黃
+-1.0, -1.0,  1.0,  0.3, 0.3, 1.0, // 左前點 藍
+ 1.0, -1.0,  1.0,  0.0, 1.0, 0.0, // 右前點 綠
+ 1.0, -1.0, -1.0,  1.0, 0.0, 1.0, // 右後點 紫
+], fragment: [ // 立錐體各 三角面頂點 序號
+ 0, 1, 2,  0, 1, 4, // 左三角面 後三角面
+ 0, 2, 3,  0, 3, 4, // 前三角面 右三角面
+ 1, 2, 3,  1, 3, 4, // 底 2 三角面
+]};
+// object 2 the cube (rotate around the cube axis)
+const cube    = {
+vertex: [ // 立方體各面頂點 xyz 位置 及  rgb 顏色
+/* 前面 */	-1.0, -1.0,  1.0,  0.0, 1.0, 0.0, // 左下  綠
+    		 1.0, -1.0,  1.0,  0.0, 1.0, 0.0, // 右下  綠
+    		 1.0,  1.0,  1.0,  0.0, 1.0, 0.0, // 右上  綠
+    		-1.0,  1.0,  1.0,  0.0, 1.0, 0.0, // 左上  綠
+/* 後面 */	-1.0, -1.0, -1.0,  0.2, 0.2, 1.0, // 左下  藍
+    		-1.0,  1.0, -1.0,  0.2, 0.2, 1.0, // 左上  藍
+    		 1.0,  1.0, -1.0,  0.2, 0.2, 1.0, // 右上  藍
+    		 1.0, -1.0, -1.0,  0.2, 0.2, 1.0, // 右下  藍
+/* 上面 */	-1.0,  1.0, -1.0,  0.9, 0.9, 0.0, // 左後  黃
+    		-1.0,  1.0,  1.0,  0.9, 0.9, 0.0, // 左前  黃
+    		 1.0,  1.0,  1.0,  0.9, 0.9, 0.0, // 右前  黃
+    		 1.0,  1.0, -1.0,  0.9, 0.9, 0.0, // 右後  黃
+/* 下面 */	-1.0, -1.0, -1.0,  0.8, 0.8, 0.8, // 左後  白
+    		 1.0, -1.0, -1.0,  0.8, 0.8, 0.8, // 右後  白
+    		 1.0, -1.0,  1.0,  0.8, 0.8, 0.8, // 右前  白
+    		-1.0, -1.0,  1.0,  0.8, 0.8, 0.8, // 左前  白
+/* 右面 */	 1.0, -1.0, -1.0,  1.0, 0.5, 5.0, // 後下  紅
+    		 1.0,  1.0, -1.0,  1.0, 0.5, 5.0, // 前下  紅
+    		 1.0,  1.0,  1.0,  1.0, 0.5, 5.0, // 前上  紅
+    		 1.0, -1.0,  1.0,  1.0, 0.5, 5.0, // 後上  紅
+/* 左面 */	-1.0, -1.0, -1.0,  1.0, 0.5, 0.0, // 後下  桔
+    		-1.0, -1.0,  1.0,  1.0, 0.5, 0.0, // 後上  桔
+    		-1.0,  1.0,  1.0,  1.0, 0.5, 0.0, // 前上  桔
+    		-1.0,  1.0, -1.0,  1.0, 0.5, 0.0, // 前下  桔
+],
+fragment: [ // 立方體各 三角面頂點 序號
+ 00, 01, 02,   00, 02, 03, // 前面
+ 04, 05, 06,   04, 06, 07, // 後面
+ 08, 09, 10,   08, 10, 11, // 上面
+ 12, 13, 14,   12, 14, 15, // 下面
+ 16, 17, 18,   16, 18, 19, // 右面
+ 20, 21, 22,   20, 22, 23  // 左面
+]};
+///////////////////////////////////////////////////////////////////////////
+fragmentShaderSrc = ` // GPU fragment 程式
+    precision mediump float;
+    varying vec4 vColor;
+    void main() { // GPU fragmentShader main
+        gl_FragColor = vColor;
+    }
+`;
+///////////////////////////////////////////////////////////////////////////
+vertexShaderSrc = ` // GPU vertex 程式
+    attribute vec4 aVertexPosition;
+    attribute vec4 aVertexColor;
+    attribute float aPointSize;
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    varying vec4 vColor;
+    void main() { // GPU vertexShader main
+        gl_PointSize = aPointSize;
+        gl_Position = uPMatrix * uMVMatrix * aVertexPosition;
+        vColor = aVertexColor;
+    }
+`;
+///////////////////////////////////////////////////////////////////////////
+var gl = canvas.getContext("webgl");
+var error;
+///////////////////////////////////////////////////////////////////////////
+function initGL() { // 啟動 webgl
+	if (!gl) { error = "!! no webgl !!"; throw error; }
+	gl.viewportWidth = canvas.width;
+	gl.viewportHeight = canvas.height;
+}
+///////////////////////////////////////////////////////////////////////////
+function compileShader(type, src) { // 編譯 typeShader
+	var typeShader;
+	if(type == "fragmentShader") typeShader = gl.createShader(gl.FRAGMENT_SHADER);
+	else if(type == "vertexShader") typeShader = gl.createShader(gl.VERTEX_SHADER);
+	else { error = "!! wrong " + type + " !! "; throw error; }
+	gl.shaderSource(typeShader, src);
+	gl.compileShader(typeShader);
+	if (!gl.getShaderParameter(typeShader, gl.COMPILE_STATUS)) {
+		error = "!! no " + type + " !! " + gl.getShaderInfoLog(typeShader); throw error;
+	}
+	return typeShader;
+}
+///////////////////////////////////////////////////////////////////////////
+var shaderProgram;   // GPU 程式
+var aVertexPosition; // GPU 程式中 n 點 xyzw 位置 attribute 矩陣 aVertexPosition 的指標
+var aVertexColor;    // GPU 程式中 n 點 rgba 顏色 attribute 矩陣 aVertexColor    的指標
+var aPointSize;      // GPU 程式中 點 尺寸 attribute 浮點數值    aPointSize      的指標
+var uPMatrix;        // GPU 程式中 4*4 透視 uniform 矩陣          uPMatrix       的指標
+var uMVMatrix;       // GPU 程式中 4*4 移轉 uniform 矩陣         uMVMatrix       的指標
+///////////////////////////////////////////////////////////////////////////
+function initShaders() { // 啟動 GPU 程式
+	var fragmentShader = compileShader("fragmentShader", fragmentShaderSrc);
+	var vertexShader   = compileShader(  "vertexShader",   vertexShaderSrc);
+	shaderProgram = gl.createProgram();
+	gl.attachShader(shaderProgram, vertexShader);
+	gl.attachShader(shaderProgram, fragmentShader);
+	gl.linkProgram (shaderProgram);
+	if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+		error = "!! no shaderProgram !! " + gl.getShaderInfoLog(shader); throw error;
+	}
+	gl.useProgram(shaderProgram);
+	aVertexPosition = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+	aVertexColor = gl.getAttribLocation(shaderProgram, "aVertexColor");
+	aPointSize = gl.getAttribLocation(shaderProgram, "aPointSize");
+    uPMatrix = gl.getUniformLocation(shaderProgram, "uPMatrix");
+	uMVMatrix = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+	gl.enableVertexAttribArray(aVertexPosition);
+	gl.enableVertexAttribArray(aVertexColor);
+}
+///////////////////////////////////////////////////////////////////////////
+var  pMatrix = mat4.create(); // 透視矩陣
+var mvMatrix = mat4.create(); // 移轉矩陣
+///////////////////////////////////////////////////////////////////////////
+function degToRad(degrees) { // 角度 轉成 徑度 (90 --> Math.PI/2, 180 --> Math.PI )
+    return degrees * Math.PI / 180;
+}
+///////////////////////////////////////////////////////////////////////////
+function initBuffers() { // 傳 點 的 尺寸位置顏色序號 等數據 到 GPU buffer
+        pyramid.  vertexBuffer = gl.createBuffer();
+        pyramid.fragmentBuffer = gl.createBuffer();
+           cube.  vertexBuffer = gl.createBuffer();
+           cube.fragmentBuffer = gl.createBuffer();
+    gl.vertexAttrib1f(aPointSize, 8.0);
+// 立錐體    頂點位置顏色 傳到 GPU buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, pyramid.vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pyramid.vertex), gl.STATIC_DRAW);
+// 立錐體各三角面頂點序號 傳到 GPU buffer
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pyramid.fragmentBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(pyramid.fragment), gl.STATIC_DRAW);
+// 立方體頂點位置 傳到 GPU buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, cube.vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.vertex), gl.STATIC_DRAW);
+// 立方體各三角面頂點序號 傳到 GPU buffer
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cube.fragmentBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cube.fragment), gl.STATIC_DRAW);
+}
+///////////////////////////////////////////////////////////////////////////
+gl.drawAxis = function () {
+	// 設定 axis object 端點 位置 顏色(白)
+	var dir = gl.direction;
+	var dx = dir[0] * 1.1, dy = dir[1] * 1.1, dz = dir[2] * 1.1;
+	var axisVertex = [-dx, -dy, -dz, 1, 1, 1, dx, dy, dz, 1, 1, 1];
+	var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(axisVertex), gl.STATIC_DRAW);
+	// 取 xyz 端點位置
+    gl.vertexAttribPointer(aVertexPosition, 3, gl.FLOAT, false, Float32Array.BYTES_PER_ELEMENT * 6, 0);
+	// 取 rgb 端點顏色
+    gl.vertexAttribPointer(aVertexColor, 3, gl.FLOAT, false, Float32Array.BYTES_PER_ELEMENT * 6, Float32Array.BYTES_PER_ELEMENT * 3);
+    // 畫軸線
+	gl.drawArrays(gl. LINES, 0, 2); 
+	// 畫端點
+    gl.drawArrays(gl.POINTS, 0, 2); 
+}
+gl.drawObject = function (object) {
+	// 用 object 端點數據
+    gl.bindBuffer(gl.ARRAY_BUFFER, object.vertexBuffer); 
+	// 取 object 點位置
+    gl.vertexAttribPointer(aVertexPosition, 3, gl.FLOAT, false, Float32Array.BYTES_PER_ELEMENT * 6, 0);
+	// 取 object 點點顏色
+    gl.vertexAttribPointer(aVertexColor, 3, gl.FLOAT, false, Float32Array.BYTES_PER_ELEMENT * 6, Float32Array.BYTES_PER_ELEMENT * 3);
+	// 用 object 端點數據
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, object.fragmentBuffer);
+	// 畫端點
+    gl.drawElements(gl.TRIANGLES, object.fragment.length, gl.UNSIGNED_SHORT, 0);
+}
+gl.translate = function(relativeXYZ){
+    mat4.translate(mvMatrix, relativeXYZ);
+}
+gl.setCoordinate = function(origin,direction){
+	gl.origin = origin || [0, 0, 0];
+	gl.direction = direction || [0, 0, 1];
+    mat4.identity(mvMatrix);
+    mat4.translate(mvMatrix, origin);
+}
+gl.rotate = function(amount){
+    mat4.rotate(mvMatrix, degToRad(amount), gl.direction);
+    gl.uniformMatrix4fv(uMVMatrix, false, mvMatrix); // 傳送 移轉矩陣 給GPU
+}
+gl.snapshhot = function(){
+    gl.uniformMatrix4fv(uPMatrix, false, pMatrix); // 傳送 透視矩陣 給GPU
+}
+///////////////////////////////////////////////////////////////////////////
+var timeNow = 0;
+function drawScene(now) {
+    timeNow = (now || 0) / 1000; // 時間預設 0, 單位 改為 秒
+    gl.clear(gl.COLOR_BUFFER_BIT);
+	// 左下角
+    gl.setCoordinate([-3, -3, -12], [1, 1, 0]);
+	gl.rotate(-90*timeNow);
+    gl.drawAxis();
+	gl.drawObject(pyramid);
+	gl.translate([2.1, 0, 0]);
+	gl.rotate(0);
+	gl.drawObject(cube);
+	// 右下角
+	gl.setCoordinate([ 3, -3, -12], [-, 1, 1]);
+    gl.rotate(360*timeNow);
+	gl.drawAxis();
+	gl.drawObject(cube);
+	// 右上角
+    gl.setCoordinate([ 3,  3, -12], [1, 1, 1]);
+	gl.rotate( 180*timeNow);
+    gl.drawAxis();
+	gl.drawObject(pyramid);
+	// 左上角
+	gl.setCoordinate([-3,  3, -12], [1, 1, 1]);
+    gl.rotate(-180*timeNow);
+	gl.drawAxis();
+	gl.drawObject(cube);
+	
+	requestAnimFrame(drawScene);
+}
+///////////////////////////////////////////////////////////////////////////
+function webGLStart() {
+    initGL(); // 啟動 webgl
+    initShaders() // 啟動 GPU 程式
+    initBuffers(); // 傳資料到 GPU buffer
+    gl.clearColor(0.2, 0.2, 0.2, 1.0); // 深灰色背景
+    gl.enable(gl.DEPTH_TEST); // 啟動 前景遮後景 效果
+    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+    gl.snapshhot(); // 傳送 透視矩陣 給GPU
+    drawScene(); // 隨時動態 更新場景
+}
+///////////////////////////////////////////////////////////////////////////
+</script>

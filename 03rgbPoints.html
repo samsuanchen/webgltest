@@ -1,0 +1,116 @@
+//<canvas width="200" height="200" id="canvas"><script>
+
+var points = [ // x y for each point
+   -.8,  -.8, // buttom left
+   0.8,  -.8, // buttom right
+   0.0,  0.8, // top middle
+   0.0, -.27, // center
+];
+var colors = [ // r g b for each point
+  1.0, 0.0, 0.0, // red
+  0.0, 0.7, 0.0, // green
+  0.0, 0.0, 1.0, // blue
+  1.0, 1.0, 1.0, // blue
+];
+var lineIndices = [ // each pair (of 2 indices) is a line segment
+  0,3, 1,3, 2,3, 0,1, 0,2, 1,2
+];
+
+const vSrc=`// GPU VERTEX shader source code
+  attribute vec4 aPosition; // CPU vector array aPosition
+  attribute vec4 aColor;    // CPU vector array aColor 
+  attribute float aSize;    // CPU float        aSize
+  varying lowp vec4 vColor; // GPU vector array vColor
+  void main() {
+    gl_Position = aPosition;// get GPU gl_Position  from CPU aPosition
+    gl_PointSize = aSize;   // get GPU gl_PointSize from CPU aSize
+    vColor = aColor;        // get GPU vColor       from GPU aColor
+}`;
+
+const fSrc=`// GPU FRAGMENT shader source code
+  varying lowp vec4 vColor; // GPU vector array vColor
+  void main() {
+    gl_FragColor = vColor;  // get GPU gl_FragColor from GPU vColor
+}`;
+
+const gl = canvas.getContext('webgl'); 
+var shader;
+
+function compileTypeShader(type, source) {
+  const typeShader = gl.createShader(type);
+  gl.shaderSource(typeShader, source);
+  gl.compileShader(typeShader);
+  if (!gl.getShaderParameter(typeShader, gl.COMPILE_STATUS)) {
+    alert('Unable to compile shader of type '+type+': ' + gl.getShaderInfoLog(shader));
+    gl.deleteShader(typeShader);
+    return null;
+  }
+  return typeShader;
+}
+
+function setupCode() {
+  shader = gl.createProgram();
+  // 編譯 GPU 目的程式
+  gl.attachShader(shader, compileTypeShader(gl.VERTEX_SHADER,vSrc));
+  gl.attachShader(shader, compileTypeShader(gl.FRAGMENT_SHADER,fSrc));
+  // 編譯 GPU 執行程式
+  gl.linkProgram(shader);
+  if (!gl.getProgramParameter(shader, gl.LINK_STATUS)) {
+    alert('Unable to link shader: ' + gl.getProgramInfoLog(shaderProgram));
+    return;
+  }
+  // 使用 GPU 執行程式
+  gl.useProgram(shader);
+  return shader;
+}
+
+var normalize, stride, offset; // used for descriptive
+function setupData() {
+  // 1. 設定 GPU aPosition 向量陣列 取用 CPU points 浮點數陣列 x,y 數值
+  // 1.0. 將 points 數值陣列 放入 ARRAY_BUFFER
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+  // 1.1. 從 ARRAY_BUFFER 每次取 x,y 2 個浮點數 組成 aPosition 位置向量, 形成 位置向量陣列
+  const aPosition = gl.getAttribLocation(shader, "aPosition");
+  gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, normalize = false, stride = 0, offset = 0);
+  gl.enableVertexAttribArray(aPosition);
+  // 2. 設定 GPU aSize 取用 10.0 浮點數值 作為 點的尺寸
+  const aSize = gl.getAttribLocation(shader, "aSize");
+  gl.vertexAttrib1f(aSize, 10.0);
+  // 3. 設定 GPU aColor 向量陣列 取用 CPU colors 浮點數陣列 r,g,b 數值
+  // 3.0. 將 colors 數值陣列 放入 ARRAY_BUFFER
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+  // 3.1. 從 ARRAY_BUFFER 每點取 r,g,b 3 個浮點數 組成 aColor 顏色向量, 形成 顏色向量陣列
+  const aColor = gl.getAttribLocation(shader, "aColor");
+  gl.vertexAttribPointer(aColor, 3, gl.FLOAT, normalize = false, stride = 0 ,offset = 0);
+  gl.enableVertexAttribArray(aColor);
+  // 4. 將 lineIndices 數值陣列 放入 ARRAY_BUFFER
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(lineIndices), gl.STATIC_DRAW);
+}
+
+function drawInit() {
+  gl.clearColor(.5, .5, .5, 1); // set background color as grey
+}
+
+function drawLoop() {
+  gl.clear(gl.COLOR_BUFFER_BIT); // clear canvas by filling background color
+  const np = points.length/2;
+  gl.drawArrays(gl.POINTS, 0, np); // draw 4 points of red, green, blue, and white
+//gl.drawArrays(gl.LINES, 0, np); // draw connect lines
+  gl.drawElements(gl.LINES, lineIndices.length, gl.UNSIGNED_BYTE, 0); // draw connect lines
+  requestAnimationFrame( (() => () => drawLoop()) () );
+}
+
+function main() {
+  if(!gl) { alert('Unable to get webGL context'); return; }
+  shader = setupCode();
+  if(!shader) { alert('no shader to run'); return; }
+  setupData();
+  drawInit();
+  drawLoop();
+}
+
+main();
+//</script>

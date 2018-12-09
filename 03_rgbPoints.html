@@ -31,10 +31,8 @@ const fSrc=`// GPU FRAGMENT shader source code
 
 var aPosition, aSize, aColor; // CPU pointers passing data to GPU
 
-var gl = canvas.getContext("webgl");
-
 var shader;
-
+const gl = canvas.getContext('webgl');
 function main() {
   if(!gl){
     alert('Unable to get webGL context');
@@ -109,8 +107,8 @@ function runCode() {
   gl.clear(gl.COLOR_BUFFER_BIT); // clear canvas by background color
   gl.drawArrays(gl.POINTS, 0, np); // red, green, and blue points
   // gl.drawArrays(gl.LINES, 0, np); // buttom line (1 line)
-  gl.drawArrays(gl.LINE_LOOP, 0, np); // triangle frame (3 lines)
-  // gl.drawArrays(gl.TRIANGLES, 0, np); // triangle
+  //gl.drawArrays(gl.LINE_LOOP, 0, np); // triangle frame (3 lines)
+  gl.drawArrays(gl.TRIANGLES, 0, np); // triangle
 }
 
 main();

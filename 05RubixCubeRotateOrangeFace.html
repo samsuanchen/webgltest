@@ -1,0 +1,320 @@
+<canvas id="canvas" width="200" height="200"></canvas>
+<div class='text'>
+    <div id='oBox'><br> forth script:</div>
+    <textarea id='iBox' cols='25'>words
+	</textarea><br><br>
+	<button onclick='goEval()'>eval</button><br> output to console<br> (please press F12)
+	<br>
+</div>
+<script src="lib/gl-matrix.js"></script>
+<script src="lib/vm.js"></script>
+<script>
+function goEval(){ vm.type('inp> '+iBox.value+'\nout> ');
+	vm.eval(iBox.value); iBox.value=''; }
+	
+//  3x3 魔術方塊
+
+var cubeRotation = 0.0; // 魔術方塊轉動 起始角度
+var orangeRotation = 0.0; // 桔色面順時鐘轉動 起始角度
+const orangeRotationEnd = Math.PI / 2; // 桔色面順時鐘轉至 90 度
+
+var P = []; // 所有 小方塊 各面頂點 座標 27 小方塊 * 8 頂點 * 3 面向 * 座標 xyzw 3
+var C = []; // 所有 小方塊 各面頂點 顏色 27 小方塊 * 8 頂點 * 3 面向 * 顏色 rgbo 3
+var I = []; // 所有 三角面 各個頂點 序號 27 小方塊 * 6 面 * 2 三角面 * 3 頂點序號
+var K =  0; // 小方塊序號
+var yT, yD; // 小方塊上下 y 值
+var xL, xR; // 小方塊左右 x 值
+var zF, zB; // 小方塊前後 z 值
+var ci;     // 組成小方塊之所有 三角面 的 36 個 頂點序號
+
+function addFaceColor(rgb) {
+	C = C.concat(rgb,rgb,rgb,rgb);
+}
+var X = [[], [], []];
+var Y = [[], [], []];
+var Z = [[], [], []];
+for(var i=0; i<3; i++){
+  for(var j=0; j<3; j++){
+    for(var k=0; k<3; k++){
+		xL=i*.66-.97, /* 左 */ xR=xL+.62, // 右
+		yD=j*.66-.97, /* 下 */ yT=yD+.62, // 上
+		zB=k*.66-.97, /* 後 */ zF=zB+.62; // 前
+		// 正面 4 頂點 x,y,z 座標
+		P = P.concat(xL, yD, zF); //-1.0, -1.0,  1.0, 頂點 序號 K+0
+		P = P.concat(xR, yD, zF); // 1.0, -1.0,  1.0, 頂點 序號 K+1
+		P = P.concat(xR, yT, zF); // 1.0,  1.0,  1.0, 頂點 序號 K+2
+		P = P.concat(xL, yT, zF); //-1.0,  1.0,  1.0, 頂點 序號 K+3
+		// 後面 4 頂點 x,y,z 座標
+		P = P.concat(xL, yD, zB); //-1.0, -1.0, -1.0, 頂點 序號 K+4
+		P = P.concat(xL, yT, zB); //-1.0,  1.0, -1.0, 頂點 序號 K+5
+		P = P.concat(xR, yT, zB); // 1.0,  1.0, -1.0, 頂點 序號 K+6
+		P = P.concat(xR, yD, zB); // 1.0, -1.0, -1.0, 頂點 序號 K+7
+		// 上面 4 頂點 x,y,z 座標
+		P = P.concat(xL, yT, zB); //-1.0,  1.0, -1.0, 頂點 序號 K+8
+		P = P.concat(xL, yT, zF); //-1.0,  1.0,  1.0, 頂點 序號 K+9
+		P = P.concat(xR, yT, zF); // 1.0,  1.0,  1.0, 頂點 序號 K+10
+		P = P.concat(xR, yT, zB); // 1.0,  1.0, -1.0, 頂點 序號 K+11
+		// 下面 4 頂點 x,y,z 座標
+		P = P.concat(xL, yD, zB); //-1.0, -1.0, -1.0, 頂點 序號 K+12
+		P = P.concat(xR, yD, zB); // 1.0, -1.0, -1.0, 頂點 序號 K+13
+		P = P.concat(xR, yD, zF); // 1.0, -1.0,  1.0, 頂點 序號 K+14
+		P = P.concat(xL, yD, zF); //-1.0, -1.0,  1.0, 頂點 序號 K+15
+		// 右面 4 頂點 x,y,z 座標
+		P = P.concat(xR, yD, zB); // 1.0, -1.0, -1.0, 頂點 序號 K+16
+		P = P.concat(xR, yT, zB); // 1.0,  1.0, -1.0, 頂點 序號 K+17
+		P = P.concat(xR, yT, zF); // 1.0,  1.0,  1.0, 頂點 序號 K+18
+		P = P.concat(xR, yD, zF); // 1.0, -1.0,  1.0, 頂點 序號 K+19
+		// 左面 4 頂點 x,y,z 座標
+		P = P.concat(xL, yD, zB); //-1.0, -1.0, -1.0, 頂點 序號 K+20
+		P = P.concat(xL, yD, zF); //-1.0, -1.0,  1.0, 頂點 序號 K+21
+		P = P.concat(xL, yT, zF); //-1.0,  1.0,  1.0, 頂點 序號 K+22
+		P = P.concat(xL, yT, zB); //-1.0,  1.0, -1.0, 頂點 序號 K+23
+		// 正面 綠色
+		addFaceColor([        0, k==2? 1:.2,         0]);
+		// 後面 藍色
+		addFaceColor([        0,          0, k==0?1:.2]);
+		// 上面 黃色
+		addFaceColor([j==2?1:.2, j==2? 1:.2,         0]);
+		// 下面 白色
+		addFaceColor([j==0?1:.2, j==0? 1:.2, j==0?1:.2]);
+		// 左面 桔色
+		addFaceColor([i==2?1:.2, i==2?.5:.1,         0]);
+		// 右面 紅色
+		addFaceColor([i==0?1:.2,          0,         0]);
+		// 正面 由 2 三角面 組成 6 點 序號
+		ci=[];
+		ci = ci.concat(K+ 0, K+ 1, K+ 2, K+ 0, K+ 2, K+ 3);
+		// 後面 由 2 三角面 組成 6 點 序號
+		ci = ci.concat(K+ 4, K+ 5, K+ 6, K+ 4, K+ 6, K+ 7);
+		// 上面 由 2 三角面 組成 6 點 序號
+		ci = ci.concat(K+ 8, K+ 9, K+10, K+ 8, K+10, K+11);
+		// 下面 由 2 三角面 組成 6 點 序號
+		ci = ci.concat(K+12, K+13, K+14, K+12, K+14, K+15);
+		// 右面 由 2 三角面 組成 6 點 序號
+		ci = ci.concat(K+16, K+17, K+18, K+16, K+18, K+19);
+		// 左面 由 2 三角面 組成 6 點 序號
+		ci = ci.concat(K+20, K+21, K+22, K+20, K+22, K+23);
+		I = I.concat(ci);
+		X[i] = X[i].concat(ci);
+		Y[j] = Y[j].concat(ci);
+		Z[k] = Z[k].concat(ci);
+		K+=24;
+    }
+  }
+}
+function reveal1(k) { j=Math.floor(k/9),k=k%9,y=Y[j]; for(i=0;i<36;i+=6) K=y[k*36+i], y[k*36+i+1]=K+1, y[k*36+i+4]=K+2; }
+function hide1(k) { j=Math.floor(k/9),k=k%9,y=Y[j]; for(i=0;i<36;i+=6) K=y[k*36+i], y[k*36+i+1]=K, y[k*36+i+4]=K; }
+function reveal() { for (var i = 0; i < arguments.length; i++) { reveal1(arguments[i]); } }
+function hide() { for (var i = 0; i < arguments.length; i++) { hide1(arguments[i]); } }
+
+const vsCode = `// GPU Vertex Shader main
+// pointers of to get CPU data
+attribute vec4 aPosition; // 點的位置
+attribute vec4 aColor;    // 點的顏色
+uniform mat4 uModelView;  // 移轉矩陣
+uniform mat4 uProjection; // 透視矩陣
+// data shared in GPU
+varying lowp vec4 vColor; // 點的顏色
+void main() {
+  gl_Position = uProjection * uModelView * aPosition;
+  vColor = aColor; // give data to fsCode
+}
+`;
+
+const fsCode = `// GPU Fragment Shader main
+// data shared in GPU
+varying lowp vec4 vColor; // 點的顏色
+void main() {
+  gl_FragColor = vColor; // get data from vsCode
+}
+`;
+
+// pointers of GPU data
+var aPosition, aColor, uProjection, uModelView;
+// pointers of GPU buffer
+var bPosition, bPosition1, bColor, bIndex, bIndex0;
+
+// webgl playground
+const gl = canvas.getContext('webgl');
+var shaderProgram;
+
+main();
+////////////////////////////////////////////////////////////////////////////
+function main() { //###### CPU main ######//
+
+  if(!gl) { alert("no webgl"); return; }
+  
+  // setup GPU buffer pointers
+  bPosition = gl.createBuffer();
+  bPosition1 = gl.createBuffer();
+  bColor = gl.createBuffer();
+  bIndex = gl.createBuffer();
+  bIndex0 = gl.createBuffer();
+  
+  // setup GPU shaderProgram
+  shaderProgram = setupCode();
+  if(!shaderProgram) { alert("no shaderProgram"); return; }
+  
+  // setup GPU data pointers
+  aPosition = gl.getAttribLocation(shaderProgram, 'aPosition');
+  aColor = gl.getAttribLocation(shaderProgram, 'aColor');
+  uProjection = gl.getUniformLocation(shaderProgram, 'uProjection');
+  uModelView = gl.getUniformLocation(shaderProgram, 'uModelView');
+  
+  // put CPU data to GPU buffer
+//setupData();
+  
+  // prepare to draw
+  drawInit();
+  
+  // repeatly call draw
+  requestAnimationFrame(draw);
+}
+////////////////////////////////////////////////////////////////////////////
+function setupCode() {
+  const vertexShader = compile('VERTEX', vsCode);
+  const fragmentShader = compile('FRAGMENT', fsCode);
+  const shaderProgram = gl.createProgram();
+  gl.attachShader(shaderProgram, vertexShader);
+  gl.attachShader(shaderProgram, fragmentShader);
+  gl.linkProgram(shaderProgram);
+  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+    alert('link shader program: ' + gl.getProgramInfoLog(shaderProgram));
+    return;
+  }
+  gl.useProgram(shaderProgram);
+  return shaderProgram;
+}
+////////////////////////////////////////////////////////////////////////////
+function compile(type, source) {
+  const shader = gl.createShader(type=='VERTEX' ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    alert('compile '+type+' shader program: ' + gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return;
+  }
+  return shader;
+}
+////////////////////////////////////////////////////////////////////////////
+function setupData() {
+  gl.bindBuffer(gl.ARRAY_BUFFER, bPosition); //////////////////////////////
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(P), gl.STATIC_DRAW);
+  ///////////////////////////////////////////////////////////////////////////
+  gl.bindBuffer(gl.ARRAY_BUFFER, bColor); //////////////////////////////
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(C), gl.STATIC_DRAW);
+  ////////////////////////////////////////////////////////////////////////////
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bIndex); //////////////////////////////
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(Y[0]), gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bIndex0); //////////////////////////////
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(Y[1].concat(Y[2])), gl.STATIC_DRAW);
+}
+////////////////////////////////////////////////////////////////////////////
+function drawInit() {
+  gl.clearColor(0.5, 0.0, 0.5, 1.0);  // Clear to grey, fully opaque
+  gl.clearDepth(1.0);                 // Clear everything
+  gl.enable(gl.DEPTH_TEST);           // Enable depth testing
+  gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+  // 座標 位移 旋轉
+  // Create a perspective matrix, a special matrix that is
+  // used to simulate the distortion of perspective in a camera.
+  // Our field of view is 45 degrees, with a width/height
+  // ratio that matches the display size of the canvas
+  // and we only want to see objects between 0.1 units
+  // and 100 units away from the camera.
+  var projectionMatrix, fieldOfView, aspect, zNear, zFar;
+  mat4.perspective(projectionMatrix = mat4.create(),
+                   fieldOfView = 45 * Math.PI / 180,
+                   aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
+                   zNear = 0.1,
+                   zFar = 99.0);
+  gl.uniformMatrix4fv(
+      uProjection, //////////////////////////////
+      false,
+      projectionMatrix); 
+	  
+  // 取顏色
+  var numComponents, type, normalize, stride, offset;
+  gl.bindBuffer(gl.ARRAY_BUFFER, bColor); //////////////////////////////
+  gl.vertexAttribPointer(
+        aColor, //////////////////////////////
+        numComponents = 3,          // r,g,b
+        type = gl.FLOAT,
+        normalize = false,
+        stride = 0,
+        offset = 0);
+  gl.enableVertexAttribArray(aColor);
+  
+  // 取位置
+  var numComponents, type, normalize, stride, offset;
+  gl.bindBuffer(gl.ARRAY_BUFFER, bPosition); //////////////////////////////
+  gl.vertexAttribPointer(
+        aPosition, //////////////////////////////
+        numComponents = 3, // x,y,z
+        type = gl.FLOAT,
+        normalize = false,
+        stride = 0,
+        offset = 0);
+  gl.enableVertexAttribArray(aPosition);
+  
+}
+////////////////////////////////////////////////////////////////////////////
+var then = 0;
+function frameDeltaTime(now){
+  now *= 0.001;  // convert to seconds
+  const deltaTime = now - then; // delay between 2 AnimationFrames
+  then = now;
+  return deltaTime;
+}
+////////////////////////////////////////////////////////////////////////////
+function draw(now) {
+  
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);  // 背景 灰色
+  setupData();
+  // the center of the scene.
+  var modelViewMatrix = mat4.create();
+  mat4.translate(modelViewMatrix,     // destination matrix
+                 modelViewMatrix,     // matrix to translate
+                 [-0.0, 0.0, -5.0]);  // amount to translate         位移
+  mat4.rotate(modelViewMatrix,        // destination matrix
+              modelViewMatrix,        // matrix to rotate
+              cubeRotation,      // amount to rotate in radians 旋轉
+              [1, 1, 1]);             // axis to rotate around
+  gl.uniformMatrix4fv(
+      uModelView, //////////////////////////////
+      false,
+      modelViewMatrix);
+  
+  // 畫出 桔面 之外 18 方塊
+  var vertexCount, type, offset;
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bIndex0); //////////////////////////////
+  gl.drawElements(gl.TRIANGLES, vertexCount = Y[1].length+Y[2].length, type = gl.UNSIGNED_SHORT, offset = 0); // 畫 6 面 (每面 2 三角形)
+
+  // 選 桔面 9 方塊 各頂點座標
+  // rotate orange cubes.
+  var modelViewMatrix1 = mat4.create();
+  mat4.rotate(modelViewMatrix1,       // destination matrix
+              modelViewMatrix,        // matrix to rotate
+              orangeRotation,         // amount to rotate in radians 旋轉
+              [0, 1, 0]);             // axis to rotate around
+  gl.uniformMatrix4fv(
+      uModelView, //////////////////////////////
+      false,
+      modelViewMatrix1);
+  
+  // 畫出 桔面 9 方塊
+  var vertexCount, type, offset;
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bIndex); //////////////////////////////
+  gl.drawElements(gl.TRIANGLES, vertexCount = Y[0].length, type = gl.UNSIGNED_SHORT, offset = 0); // 畫 6 面 (每面 2 三角形)
+
+  // 轉動
+
+  const delta = frameDeltaTime(now)/5; // delay between 2 AnimationFrames
+  cubeRotation += delta;
+  orangeRotation += delta; if(orangeRotation > orangeRotationEnd) orangeRotation = orangeRotationEnd;
+
+  // 呼叫自己
+  requestAnimationFrame( (() => (now) => draw(now)) () );
+}
+// </script>
