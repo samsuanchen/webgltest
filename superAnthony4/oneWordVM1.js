@@ -443,7 +443,12 @@ f.defaultScript = `
 	);
 	end-code 
  code (see) ( w -- ) 
-  var src=w.src, definedBy=w.definedBy, n; 
+  var inp=f.inps[w.iInp], src;
+  if(w.srcBgn)
+	src=inp.substring(w.srcBgn,w.srcEnd);
+  else
+	src='code '+w.name+w.code.toString().match(/^function\(\)\{([^\0]+)\}$/)[1]+'end-code';
+  var definedBy=w.definedBy, n; 
   if(definedBy=='alias'){ 
    var L=Object.keys(f.dict).sort( function(a,b){ 
     return f.dict[a].id-f.dict[b].id; 

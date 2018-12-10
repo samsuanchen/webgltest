@@ -2,7 +2,7 @@
 
 ## A) Forth 基本特性
 
-   1. Forth 是 場域應用系統 使用者 或 程式語言 初學者 容易使用
+   1. Forth 是 場域應用系統 (domain specific system) 使用者 或 程式語言 初學者 容易使用
       並且 容易用以設計 場域應用系統 的 語言。
 
    2. Forth 是 程式語言 開發者 容易輕鬆建制 的 系統, 從無到有 (Bottom Up)
@@ -28,46 +28,55 @@
 
 ## E) f.eval(script)
 
-   f.eval(script) 這 js 指令 將 script 存放到 f.tib, 然後 依序取其中 以 white space 區隔的
-   字串 存放到 f.token (注意! 其中不含 white space) 依下述規則處理之。
+   f.eval(script) 這 js 指令 將 script 存到 輸入暫存區 f.tib, 然後 依序取 以 white space 區隔的
+   字串 f.token (注意! 其中不含 white space) 依下述規則處理之。
    
    1. 若 f.token 是 Forth Word, 就直接執行。 
-   2. 若 f.token 是一個 number (是 任何進制 int 或 10 進制 float), 就放到 資料堆疊 備用。 
-   3. 若 f.token 是一個 js object, 不管是 string, list, function, … 等, 也放到 資料堆疊 備用。
+   2. 若 f.token 是一個 任何進制的 整數 int 就放上 資料堆疊 f.dStk。 
+   3. 若 f.token 是一個 js object, 不管是 10 進制 float, string, list, function, … 等, 也放上 f.dStk。
    4. 否則, 就宣稱 這 f.token 字串 為 "unDef", 並停止其餘 token 的處理。
 
    
 ## F) 用 code 定義 Forth Word
 
-   現在說明 怎樣可以 在 script 中 用 code 來定義一個 Forth Word, 其語法如下。 
+   現在說明 怎樣可以 在 script 中 用 code 來定義 Forth Word, 其語法如下。 
    
    1. code 之後 是 Forth Word 的名稱 (可為任何字串, 可包含任何符號)。 
-   2. 隨後 可接一個 i/o 參數宣告 (左右圓括弧間)。 兩個減號前 代表這 Forth Word 執行時
-      從 f.tib 取後續 token 或 資料堆疊 f.dStk 取出 data; 兩個減號後 代表 執行後 放上 資料堆疊
-	  f.dStk 的 data。
+   2. 隨後 可接或不接 一個 i/o 參數宣告 (左右圓括弧間)。 兩個減號前 代表這 Forth Word 執行時
+      從 輸入暫存區 f.tib 取後續 token 或 資料堆疊 f.dStk 取其上 data; 兩個減號後 代表 執行後
+	  放上 資料堆疊 f.dStk 的 data。
    3. 之後到 end-code 間 為這 Forth Word 所要執行的 js script。
    
-   例如:
+   例1: 定義一個 名稱為 space 的 Forth Word。 
 	
 	f.eval(`
-		code bl ( -- 32 ) // 空白 字元的 ASCII 碼 32 (存到 資料堆疊 f.dStk)。
-			f.dStk.push(32);
-			end-code
-	`)
-		
-   定義一個 名稱為 bl 的 Forth Word。 執行這 Forth Word 也就是執行 js 指令
-   f.dStk.push(32); 將空白 字元的 ASCII 碼 32 放上 資料堆疊 f.dStk 備用。
-   
-   例如:
-	
-	f.eval(`
-		code space ( -- ) // 印出 空白字元 (其實並未真正印出, 乃是存到 輸出暫存區 f.tob)。
+		code space ( -- ) // 印出 空白字元 (其實並非真正印出, 乃是加到 輸出暫存區 f.tob)
 			f.tob+=" ";
 			end-code
 	`)
 	
-   定義一個 名稱為 space 的 Forth Word。 執行這 Forth Word 也就是執行 js 指令
-   f.tob+=" "; 將 空白字元 存到 輸出暫存區 f.tob 備印出。
+   執行這 Forth Word 也就是執行 js 指令 f.tob+=" "; 將 空白字元 加到 輸出暫存區 f.tob 等候印出。
+   雙斜線是 js 註解 其後文字僅供參考 用以說明執行效果。
+   
+   例2: 定義兩個 名稱為 bl 及 emit 的 Forth Word。
+	
+	f.eval(`
+		code bl ( -- 32 ) // 空白字元 的 ASCII 碼 32 放上 資料堆疊 f.dStk
+			f.dStk.push(32);
+			end-code
+		code emit ( asciiCode -- ) // 印出  ASCII 碼 對應的字元 (並非真正印出, 乃加到 f.tob)
+			f.tob+=String.fromCharCode(asciiCode);
+			end-code
+	`)
+	
+   註1: i/o 參數宣告 中的名稱, 例如 asciiCode, 可直接引用於 所要執行的 js script, 例如
+   f.tob+=String.fromCharCode(asciiCode); 之中。
+		
+   註2: 若 執行一個 Forth Word, 例如 space, 就能達到 執行幾個 Forth Word, 例如 bl emit,
+   的相同效果, 應多加考慮 以大幅增進 執行效率。
+
+   註3: 針對 場域應用 系統設計, 太過低階又用不到的 Forth Word 或可不必定義。
+   
    
 ## G) Forth Word 範例
 		
