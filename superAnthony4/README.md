@@ -62,7 +62,6 @@
 	
 	f.eval(`
 		code bl ( -- 32 ) // 空白字元 的 ASCII 碼 32 放上 資料堆疊 f.dStk
-			f.dStk.push(32);
 			end-code
 		code emit ( asciiCode -- ) // 印出  ASCII 碼 對應的字元 (並非真正印出, 乃加到 f.tob)
 			f.tob+=String.fromCharCode(asciiCode);
@@ -73,7 +72,7 @@
    f.tob+=String.fromCharCode(asciiCode); 之中。
 		
    註2: 若 執行一個 Forth Word, 例如 space, 就能達到 執行幾個 Forth Word, 例如 bl emit,
-   的相同效果, 應多加考慮 以大幅增進 執行效率。
+   的相同效果, 應考慮多定義這類的 Forth Word, 以大幅增進 執行效率。
 
    註3: 針對 場域應用 系統設計, 太過低階又用不到的 Forth Word 或可不必定義。
    
